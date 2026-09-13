@@ -121,7 +121,6 @@ async def delete_product(product_id: int):
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to delete product: {e}")
     
-
 ##############################
 ########## SALES #############
 ##############################
