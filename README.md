@@ -10,7 +10,8 @@ Fastapi Python Example for UNLa SL
 - Open browser and go to [localhost:8000/docs](localhost:8000/docs) for swagger documentation.
 
 // Para crear un entorno virtual<br>
-python -m venv .venv python3.12 -m venv .venv
+python -m venv .venv
+python3.12 -m venv .venv
 
 // Para activar entorno virtual<br>
 source .venv/bin/activate

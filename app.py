@@ -1,11 +1,11 @@
-from curses.ascii import HT
-from itertools import product
+""" from curses.ascii import HT """
+""" from itertools import product
 from math import e, prod
-import stat
+import stat """
 
 from fastapi import FastAPI, status, HTTPException
-from database import db_session, Products, Sales
-from schema import ProductCreate, ProductResponse, SaleCreate, SaleResponse
+from database import Carts, db_session, Products, Sales
+from schema import ProductCreate, ProductResponse, SaleCartAssign, SaleCreate, SaleResponse
 
 app = FastAPI()
 
@@ -123,7 +123,34 @@ async def delete_product(product_id: int):
     
 ##############################
 ########## SALES #############
-##############################
+##############################    
+
+#
+# POST /sales
+#
+@app.post("/sales", status_code=status.HTTP_201_CREATED, response_model=SaleResponse)
+async def create_sale(sale_data: SaleCreate):
+    try:
+        product = Products.query.get(sale_data.product_id)
+        
+        if not product:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product does not exist")
+        
+        sale = Sales(
+            date = sale_data.date,
+            time = sale_data.time,
+            id_time = sale_data.id_cart,
+        )
+
+        db_session.add(sale)
+        db_session.commit()
+        db_session.refresh(sale)
+
+        return sale
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to create sale: {e}")
 
 #
 # GET /sales
@@ -134,8 +161,9 @@ async def get_sales():
         sales = Sales.query.all()
         return sales
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to get sales: {e}")    
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to get sales: {e}") 
     
+
 #
 # GET /sales/{sale_id}
 #
@@ -151,36 +179,7 @@ async def get_sale(sale_id):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to get sale with id {sale_id}: {e}")    
-
-#
-# POST /sales
-#
-@app.post("/sales", status_code=status.HTTP_201_CREATED, response_model=SaleResponse)
-async def create_sale(sale_data: SaleCreate):
-    try:
-        product = Products.query.get(sale_data.product_id)
-        
-        if not product:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product does not exist")
-        
-        sale = Sales(
-            date=sale_data.date,
-            time=sale_data.time,
-            quantity=sale_data.quantity,
-            product_id=sale_data.product_id,
-            total_price=round(product.price * sale_data.quantity, 2)
-        )
-
-        db_session.add(sale)
-        db_session.commit()
-        db_session.refresh(sale)
-
-        return sale
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to create sale: {e}")    
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to get sale with id {sale_id}: {e}")   
     
 #
 # PUT /sales/{sale_id}
@@ -235,3 +234,50 @@ async def delete_sale(sale_id: int):
         raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to update sale: {e}")
+
+#
+# POST /sales/{sale_id}/cart
+# 
+@app.post("/carts", status_code=status.HTTP_201_CREATED, response_model=CartCreate)
+async def create_cart():
+    try:
+
+    except:
+
+#
+# POST /sales/{sale_id}/cart
+# 
+@app.post('/sales/{sale_id}/cart', status_code=status.HTTP_200_OK, response_model=SaleResponse)
+async def sale_cart_assign(sale_id: int, sale_data: SaleCartAssign):
+
+    try:
+        sale: Sales = Sales.query.get(sale_id)
+        
+        if not sale:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Sale not fount witch id {sale_id}")
+
+        cart = Carts.query.get(sale_data.id_cart)
+        if not cart:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Cart not found id {sale_data.id_cart}")
+
+        if cart.state != "close":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only closed carts can be assigned to a sale")
+
+        if cart.sale is None and cart.sale.id != sale_id:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cart is already assigned to another sale")
+
+
+        sale.id_cart = sale_data.id_cart
+
+        db_session.commit()
+        db_session.refresh(sale)
+
+        return sale
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to update sale: {e}")
+
+
+    
