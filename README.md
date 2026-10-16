@@ -33,3 +33,5 @@ pip freeze > requirements.txt
 
 // Para activar la app y ir viendo el proceso/errores de ejecución cuando se programa<br>
 fastapi dev app.py
+
+uvicorn app:app --reload

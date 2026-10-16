@@ -21,13 +21,13 @@ class Sales(Base):
     __tablename__ = "sales"
 
     id = Column(Integer, primary_key=True)
-    date = Column(Date, nullable=False)
-    time = Column(Time, nullable=False)
+    date_sale = Column(Date, nullable=False)
+    time_sale = Column(Time, nullable=False)
     id_cart = Column(Integer, ForeignKey('carts.id'), unique=True, nullable=False)
 
     @property
     def total_price(self):
-        total = 0
+        total = 0 
         for item in self.cart.products:
             total += item.product.price * item.quantity
         return total

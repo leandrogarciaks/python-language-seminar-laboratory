@@ -5,7 +5,7 @@ from datetime import date, time
 
 class ProductCreate(BaseModel):
     name: str
-    price: float
+    price: float = Field(gt=0.0)
 
 class ProductResponse(BaseModel):
     id: int
@@ -16,29 +16,32 @@ class ProductResponse(BaseModel):
 
 
 class SaleCreate(BaseModel):
-    date: date
-    time: time
+    date_sale: date
+    time_sale: time
+    id_cart: int
+
+class SaleCartAssign(BaseModel):
     id_cart: int
 
 class CartItemResponse(BaseModel):
-     id: int
-     product: ProductResponse
-     quantity: int
+    id: int
+    product: ProductResponse
+    quantity: int
 
-     model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
 
 class CartResponse(BaseModel):
     id: int
     creation_date: date
-    state: str
+    state: Literal["open", "closed"]
     products: list[CartItemResponse]
 
     model_config = ConfigDict(from_attributes=True)
 
 class SaleResponse(BaseModel):
     id: int
-    date: date
-    time: time
+    date_sale: date
+    time_sale: time
     total_price: float
     cart: CartResponse
 
@@ -46,11 +49,8 @@ class SaleResponse(BaseModel):
 
 class CartCreate(BaseModel):
     creation_date: date
-    state: Literal["open", "close"]
+    state: Literal["open", "closed"]
 
 class CartProductAdd(BaseModel):
     id_product: int
     quantity: int = Field(gt=0)
-
-class SaleCartAssign(BaseModel):
-    id_cart: int
