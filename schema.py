@@ -51,6 +51,10 @@ class CartCreate(BaseModel):
     creation_date: date
     state: Literal["open", "closed"]
 
+class CartUpdate(BaseModel):
+    creation_date: date
+    state: Literal["open", "closed"]
+
 class CartProductAdd(BaseModel):
     id_product: int
     quantity: int = Field(gt=0)

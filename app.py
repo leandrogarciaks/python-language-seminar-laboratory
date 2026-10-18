@@ -1,9 +1,7 @@
-from tkinter import E
-
 from fastapi import FastAPI, status, HTTPException
-from database import Carts, db_session, Products, Sales
+from database import Carts, ProductCart, db_session, Products, Sales
 from schema import (
-    CartCreate, CartResponse, ProductCreate, ProductResponse,
+    CartCreate, CartItemResponse, CartProductAdd, CartResponse, CartUpdate, ProductCreate, ProductResponse,
     SaleCreate, SaleCartAssign, SaleResponse,
 )
 
@@ -284,8 +282,8 @@ async def sale_cart_assign(sale_id: int, sale_data: SaleCartAssign):
 # POST /carritos LISTO
 # GET /carritos LISTO
 # GET /carritos/{id} LISTO
-# PUT /carritos/{id}
-# DELETE /carritos/{id}
+# PUT /carritos/{id} LISTO
+# DELETE /carritos/{id} LISTO
 # POST /carritos/{id}/productos
 # DELETE /carritos/{id}/productos/{id_producto}
 
@@ -345,5 +343,122 @@ async def get_cart(cart_id: int):
 #
 # PUT /carritos/{id}
 #
+@app.put("/cart/{cart_id}", status_code=status.HTTP_200_OK, response_model=CartResponse)
+async def update_cart(cart_id: int, cart_data: CartUpdate):
 
+    try:
+
+        cart: Carts = Carts.query.get(cart_id)
+
+        if not cart:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not found id cart")
+
+        if cart.sale:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+            detail="An error ocurred conflict. Not modifity sale exists")
+
+        cart.creation_date = cart_data.creation_date
+        cart.state = cart_data.state
+
+        db_session.commit()
+        db_session.refresh(cart)
+
+        return cart
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"An error occurred while trying to get cart_id {e}")
+
+#
+# DELETE /carts/{cart_id}
+#
+@app.delete('/carts/{cart_id}')
+async def delete_cart(cart_id: int):
+
+    try:
+        cart: Carts = Carts.query.get(cart_id)
+
+        if not cart:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not found cart_id.")
+        
+        if cart.sale:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+            detail="Cart associated with sale, can't delete cart id.")
+
+        db_session.delete(cart)
+        db_session.commit()
+            
+        return {"message": "Delete cart successful"}
     
+    except HTTPException:
+        raise
+
+    except Exception as e:
+            db_session.rollback()
+            
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while trying to delete cart_id {e}")
+
+#
+# POST /carts/{id}/products
+#
+@app.post('/carts/{cart_id}/products', status_code=status.HTTP_200_OK, response_model=CartItemResponse)
+async def add_products_in_cart( cart_id: int, data_cart_product: CartProductAdd):
+
+    try:
+
+        cart: Carts = Carts.query.get(cart_id)
+
+        if not cart:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not found cart id.")
+
+        if cart.sale:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+            detail="Cart associated with sale, can't create card id.")
+
+        if cart.state != 'open':
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+            detail="Cart id as state = 'open', not assiciated with this state.")
+
+        product: Products = Products.query.get(data_cart_product.id_product)
+
+        if not product:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not found product.")
+
+        cart_item: ProductCart = None
+
+        for item in cart.products:
+            if item.id_product == product.id:
+                cart_item = item
+                break
+
+        if not cart_item:
+            cart_item = ProductCart(
+                id_cart = cart.id,
+                id_product = data_cart_product.id_product,
+                quantity = data_cart_product.quantity,
+            )
+        else:
+            cart_item.quantity = cart_item.quantity + data_cart_product.quantity
+
+        db_session.add(cart_item)
+        db_session.commit()
+        db_session.refresh(cart_item)
+
+        return cart_item
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        db_session.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"An error occurred while trying to create cart_id {e}")
+
