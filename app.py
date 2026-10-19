@@ -1,3 +1,5 @@
+from itertools import product
+
 from fastapi import FastAPI, status, HTTPException
 from database import Carts, ProductCart, db_session, Products, Sales
 from schema import (
@@ -149,6 +151,7 @@ async def create_sale(sale_data: SaleCreate):
         db_session.refresh(sale)
 
         return sale
+    
     except HTTPException:
         raise
     except Exception as e:
@@ -278,14 +281,6 @@ async def sale_cart_assign(sale_id: int, sale_data: SaleCartAssign):
 ##############################
 ########## CARTS #############
 ##############################
-
-# POST /carritos LISTO
-# GET /carritos LISTO
-# GET /carritos/{id} LISTO
-# PUT /carritos/{id} LISTO
-# DELETE /carritos/{id} LISTO
-# POST /carritos/{id}/productos
-# DELETE /carritos/{id}/productos/{id_producto}
 
 #
 # POST /carts
@@ -462,3 +457,30 @@ async def add_products_in_cart( cart_id: int, data_cart_product: CartProductAdd)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail=f"An error occurred while trying to create cart_id {e}")
 
+#
+# DELETE /carts/{cart_id}/products/{product_id}
+#
+@app.delete('/carts/{cart_id}/products/{product_id}', status_code=status)
+async def delete_producto_cart( cart_id: int, product_id: int ):
+
+    try:
+        cart: Carts = Carts.query.get(cart_id)
+        product: Products = Products.query.get(product_id)
+
+        if not cart:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                detail="An not found cart.")
+
+        if not product:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                detail="An not found product.")
+
+        return  
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+            db_session.rollback()
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while trying to create cart_id {e}")
