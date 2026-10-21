@@ -460,7 +460,7 @@ async def add_products_in_cart( cart_id: int, data_cart_product: CartProductAdd)
 #
 # DELETE /carts/{cart_id}/products/{product_id}
 #
-@app.delete('/carts/{cart_id}/products/{product_id}', status_code=status)
+@app.delete('/carts/{cart_id}/products/{product_id}', status_code=status.HTTP_200_OK)
 async def delete_producto_cart( cart_id: int, product_id: int ):
 
     try:
@@ -471,11 +471,31 @@ async def delete_producto_cart( cart_id: int, product_id: int ):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                 detail="An not found cart.")
 
+        if cart.state == 'closed':
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                detail="Can't delete for car es closed.")
+
         if not product:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                 detail="An not found product.")
 
-        return  
+        item_product: ProductCart = None
+
+        for item in cart.products:
+            if item.id_product == product_id and item.id_cart == cart_id:
+                item_product = item
+
+        if not item_product:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                detail="Not found item product for delete.")
+
+
+        db_session.delete(item_product)
+        db_session.commit()
+
+        return  {
+            "message": "Delete with exist."
+        }
 
     except HTTPException:
         raise
