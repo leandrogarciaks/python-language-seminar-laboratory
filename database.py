@@ -7,7 +7,6 @@ db_session = scoped_session(sessionmaker(bind=engine))
 Base = declarative_base()
 Base.query = db_session.query_property()
 
-
 class Products(Base):
     __tablename__ = "products"
 
@@ -24,6 +23,7 @@ class Sales(Base):
     date_sale = Column(Date, nullable=False)
     time_sale = Column(Time, nullable=False)
     id_cart = Column(Integer, ForeignKey('carts.id'), unique=True, nullable=False)
+    id_customer = Column(Integer, ForeignKey('customer.id'), nullable=False)
 
     @property
     def total_price(self):
@@ -33,6 +33,7 @@ class Sales(Base):
         return total
 
     cart = relationship("Carts", back_populates="sale")
+    customer = relationship("Customer", back_populates="sales")
 
 class Carts(Base):
     __tablename__ = "carts"
@@ -54,6 +55,16 @@ class ProductCart(Base):
 
     product = relationship("Products", back_populates="cart_items")
     cart = relationship("Carts", back_populates="products")
+
+class Customer(Base):
+    __tablename__= 'customer'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    lastname = Column(String, nullable=False)
+    dni = Column(Integer, nullable=False, unique=True)
+
+    sales = relationship("Sales", back_populates="customer")
 
 
 Base.metadata.create_all(engine, Base.metadata.tables.values(), checkfirst=True)

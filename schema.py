@@ -1,3 +1,4 @@
+import string
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -14,11 +15,11 @@ class ProductResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-
 class SaleCreate(BaseModel):
     date_sale: date
     time_sale: time
     id_cart: int
+    id_customer: int
 
 class SaleCartAssign(BaseModel):
     id_cart: int
@@ -44,6 +45,7 @@ class SaleResponse(BaseModel):
     time_sale: time
     total_price: float
     cart: CartResponse
+    id_customer: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -58,3 +60,14 @@ class CartUpdate(BaseModel):
 class CartProductAdd(BaseModel):
     id_product: int
     quantity: int = Field(gt=0)
+
+class CustomerResponse(BaseModel):
+    id: int
+    name: str
+    lastname: str
+    dni: int
+
+class CustomerCreate(BaseModel):
+    name: str
+    lastname: str
+    dni: int

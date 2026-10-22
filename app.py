@@ -1,9 +1,10 @@
 from itertools import product
+from os import name
 
 from fastapi import FastAPI, status, HTTPException
-from database import Carts, ProductCart, db_session, Products, Sales
+from database import Carts, Customer, ProductCart, db_session, Products, Sales
 from schema import (
-    CartCreate, CartItemResponse, CartProductAdd, CartResponse, CartUpdate, ProductCreate, ProductResponse,
+    CartCreate, CartItemResponse, CartProductAdd, CartResponse, CartUpdate, CustomerCreate, CustomerResponse, ProductCreate, ProductResponse,
     SaleCreate, SaleCartAssign, SaleResponse,
 )
 
@@ -144,6 +145,7 @@ async def create_sale(sale_data: SaleCreate):
             date_sale=sale_data.date_sale,
             time_sale=sale_data.time_sale,
             id_cart=sale_data.id_cart,
+            id_customer = sale_data.id_customer
         )
 
         db_session.add(sale)
@@ -210,6 +212,7 @@ async def update_sale(sale_id: int, sale_data: SaleCreate):
         sale.date_sale = sale_data.date_sale
         sale.time_sale = sale_data.time_sale
         sale.id_cart = sale_data.id_cart
+        sale.id_customer = sale_data.id_customer
 
         db_session.commit()
         db_session.refresh(sale)
@@ -277,6 +280,33 @@ async def sale_cart_assign(sale_id: int, sale_data: SaleCartAssign):
         raise
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to update sale: {e}")
+
+#
+# GET /sales/recent/{recent_sales}
+#
+@app.get('/sales/recent/{recent_sales}', status_code=status.HTTP_200_OK, response_model=list[SaleResponse])
+async def get_recent_sales( recent_sales:int ):
+
+    try:
+        if recent_sales <= 0:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Recente Sale no is posible number negative or cero.")
+        
+        sales: Sales = Sales.query.order_by(Sales.id.desc()).limit(recent_sales).all()
+
+        if not len(sales):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+            detail="Not found sales")
+
+
+        return sales
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An error occurred while trying to update sale: {e}")
+    
 
 ##############################
 ########## CARTS #############
@@ -504,3 +534,61 @@ async def delete_producto_cart( cart_id: int, product_id: int ):
             db_session.rollback()
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occurred while trying to create cart_id {e}")
+
+##############################
+########## CUSTOMER ##########
+##############################
+
+#
+# post /customers
+#
+@app.post('/customers', status_code=status.HTTP_201_CREATED, response_model=CustomerResponse)
+async def create_user(customer_data: CustomerCreate):
+
+    try:
+
+        customer: Customer = Customer.query.filter_by( dni = customer_data.dni ).first()
+        
+        if customer:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+            detail="Customer already exists with dni.")
+    
+        customer = Customer (
+            name = customer_data.name,
+            lastname = customer_data.lastname,
+            dni = customer_data.dni
+        )
+    
+        db_session.add(customer)
+        db_session.commit()
+        db_session.refresh(customer)
+    
+        return customer
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        db_session.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"An error occurred while trying to create cart_id {e}")
+
+#
+# get /customers
+#
+@app.get('/customers',status_code=status.HTTP_200_OK, response_model=list[CustomerResponse])
+async def get_customers():
+
+    try:
+
+        customer: Customer = Customer.query.all()
+        
+        return customer
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f"An error occurred while trying to create cart_id {e}")
+    

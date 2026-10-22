@@ -35,3 +35,4 @@ pip freeze > requirements.txt
 fastapi dev app.py
 
 uvicorn app:app --reload
+uvicorn app:app --reload --log-level debug
